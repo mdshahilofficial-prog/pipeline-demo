@@ -1,33 +1,48 @@
-name: Terraform CI
+name: Terraform
 
 on:
   push:
     branches:
+      - main
       - feature
 
   pull_request:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   terraform:
-    name: Terraform Validation
+    name: Terraform
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./rg
+
     steps:
-      - name: Checkout repository
+
+      # 1. Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
+      # 2. Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      - name: Terraform Format Check
-        run: terraform fmt -check -recursive
-
+      # 3. Initialize Terraform
       - name: Terraform Init
-        working-directory: ./rg
         run: terraform init
 
+      # 4. Check Terraform formatting
+      - name: Terraform Format
+        run: terraform fmt -check
+
+      # 5. Validate Terraform configuration
       - name: Terraform Validate
-        working-directory: ./rg
         run: terraform validate
