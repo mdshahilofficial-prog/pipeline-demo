@@ -11,6 +11,7 @@ on:
       - main
 
 permissions:
+  id-token: write
   contents: read
 
 jobs:
@@ -29,20 +30,35 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. Setup Terraform
+      # 2. Login to Azure using OIDC
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # 3. Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-        with:
-          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      # 3. Initialize Terraform
+      # 4. Initialize Terraform
       - name: Terraform Init
         run: terraform init
 
-      # 4. Check Terraform formatting
+      # 5. Check Terraform formatting
       - name: Terraform Format
         run: terraform fmt -check
 
-      # 5. Validate Terraform configuration
+      # 6. Validate Terraform configuration
       - name: Terraform Validate
         run: terraform validate
+
+      # 7. Create Terraform plan
+      - name: Terraform Plan
+        run: terraform plan -input=false
+
+      # 8. Apply only on push to main
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false
