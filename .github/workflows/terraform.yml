@@ -1,57 +1,33 @@
-name: Terraform
+name: Terraform CI
 
 on:
   push:
     branches:
-      - main
       - feature
 
   pull_request:
     branches:
       - main
 
-permissions:
-  contents: read
-
 jobs:
   terraform:
-    name: Terraform
+    name: Terraform Validation
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        shell: bash
-        working-directory: ./rg
-
     steps:
-
-      # 1. Checkout repository
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-        with:
-          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      # 3. Initialize Terraform
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
       - name: Terraform Init
+        working-directory: ./rg
         run: terraform init
 
-      # 4. Check Terraform formatting
-      - name: Terraform Format
-        run: terraform fmt -check
-
-      # 5. Validate Terraform configuration
       - name: Terraform Validate
+        working-directory: ./rg
         run: terraform validate
-
-      # 6. Create Terraform execution plan
-      - name: Terraform Plan
-        run: terraform plan -input=false
-
-      # 7. Apply only when changes are pushed to main
-      - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform apply -auto-approve -input=false
